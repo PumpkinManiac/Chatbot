@@ -1,16 +1,15 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import axios from "axios";
+import "dotenv/config";
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-export const configureGemini = () => {
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    if (!apiKey) {
-        throw new Error("key is not defined in your environment variables.");
+/**
+ * Returns a pre-configured axios instance for calling Gemini API
+ */
+export function configureGemini() {
+  return axios.create({
+    baseURL: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash`,
+    params: { key: process.env.GEMINI_API_KEY },
+    headers: {
+      "Content-Type": "application/json"
     }
-
-    const genAI = new GoogleGenerativeAI({ apiKey });
-
-    return genAI;
-};
+  });
+}

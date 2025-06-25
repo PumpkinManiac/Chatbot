@@ -1,94 +1,136 @@
 import React from 'react';
-import { Box, Avatar, Typography } from '@mui/material';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { coldarkDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import {useAuth} from '../../context/Authcontext.jsx'
+import { useAuth } from '../../context/Authcontext.jsx';
+import { coy } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-/* --------------------------------------------------------------
-   Helper functions
-----------------------------------------------------------------*/
-const extractCodeFromString = (message = '') =>
-  message.includes('```') ? message.split('```') : null;
+function extractCodeFromString(message = '') {
+  return message.includes('```') ? message.split('```') : null;
+}
+function isCodeBlock(str = '') {
+  return /[=[\]{};#]|\/\/|\/*/.test(str);
+}
 
-const isCodeBlock = (str = '') =>
-  /[=[\]{};#]|\/\/|\/\*/.test(str); // quick‑n‑dirty heuristic
-
-/* --------------------------------------------------------------
-   Component
-----------------------------------------------------------------*/
 const ChatItem = ({ content, role }) => {
   const auth = useAuth();
   const messageBlocks = extractCodeFromString(content);
+  const isAssistant = role === 'model';
 
-  /* Decide which avatar / background to show */
-  const isAssistant = role === 'assistant';
-  const bgColor = isAssistant ? '#004d5612' : '#004d56';
-
-  const userInitials = React.useMemo(() => {
-    if (!auth?.user?.name) return '?';
-    const [first, second = ''] = auth.user.name.split(' ');
-    return `${first[0] ?? ''}${second[0] ?? ''}`.toUpperCase();
+  const initials = React.useMemo(() => {
+    const name = auth?.user?.name || '?';
+    const parts = name.trim().split(' ');
+    const first = parts[0]?.[0] || '?';
+    const second = parts[1]?.[0] || '';
+    return (first + second).toUpperCase();
   }, [auth?.user?.name]);
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        p: 2,
-        bgcolor: bgColor,
-        gap: 2,
-        borderRadius: 2,
-        my: isAssistant ? 1 : 0, // assistant messages get extra vertical spacing
-      }}
+    <div
+      className={`flex items-start gap-4 p-4 my-2 rounded-xl sm:flex-col sm:items-start sm:gap-2 ${
+        isAssistant ? 'bg-teal-50 bg-opacity-20' : 'bg-[#d5d1e9]'
+      }`}
     >
       {/* Avatar */}
       {isAssistant ? (
-        <Avatar sx={{ ml: 0 }}>
-          <img src="openai.png" alt="openai" width={30} />
-        </Avatar>
+        <div className="w-11 h-11 sm:w-9 sm:h-9 bg-teal-200 rounded-full flex items-center justify-center shadow-md">
+          <img
+            src="https://brandlogos.net/wp-content/uploads/2025/03/gemini_icon-logo_brandlogos.net_bqzeu-300x300.png"
+            alt="model"
+            className="w-7 h-7 sm:w-5 sm:h-5"
+          />
+        </div>
       ) : (
-        <Avatar sx={{ ml: 0, bgcolor: 'black', color: 'white' }}>
-          {userInitials}
-        </Avatar>
+        <div className="w-11 h-11 sm:w-9 sm:h-9 bg-black text-white rounded-full flex items-center justify-center font-semibold shadow-md text-base sm:text-sm">
+          {initials}
+        </div>
       )}
 
-      {/* Message / code blocks */}
-      <Box>
-        {/* If there are no ``` blocks, show plain text */}
-        {!messageBlocks && (
-          <Typography sx={{ fontSize: 20 }}>{content}</Typography>
-        )}
-
-        {/* If there ARE ``` blocks, render them one by one */}
-        {messageBlocks &&
+      {/* Content */}
+      <div className="flex-1 overflow-auto sm:w-full">
+        {!messageBlocks ? (
+          <p
+            className={`whitespace-pre-wrap break-words text-base sm:text-sm overflow-auto ${
+              isAssistant ? 'text-black' : 'text-black'
+            }`}
+          >
+            {content}
+          </p>
+        ) : (
           messageBlocks.map((block, idx) =>
             isCodeBlock(block) ? (
-              <SyntaxHighlighter
+              <div
                 key={idx}
-                style={coldarkDark}
-                language="javascript"
+                className="overflow-hidden break-words my-4 rounded bg-[#1e1e1e] sm:text-sm"
+                style={{
+                  maxWidth: '100%',
+                  width: '100%',
+                }}
+              >
+                <SyntaxHighlighter
+                  language="javascript"
+                  style={coy}
+                  wrapLongLines={true}
+                  customStyle={{
+                    margin: 0,
+                    padding: '1rem',
+                    maxWidth: '100%',
+                    width: '100%',
+                    borderRadius: '4px',
+                    fontSize: '0.85rem',
+                    wordBreak: 'break-word',
+                    whiteSpace: 'pre-wrap',
+                    overflow: 'auto',
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
+                    boxSizing: 'border-box',
+                  }}
+                  codeTagProps={{
+                    style: {
+                      wordBreak: 'break-word',
+                      whiteSpace: 'pre-wrap',
+                      overflowWrap: 'break-word',
+                      maxWidth: '100%',
+                    }
+                  }}
+                  PreTag={({ children, ...props }) => (
+                    <pre
+                      {...props}
+                      style={{
+                        ...props.style,
+                        margin: 0,
+                        padding: 0,
+                        overflow: 'auto',
+                        maxWidth: '100%',
+                        wordBreak: 'break-word',
+                        whiteSpace: 'pre-wrap',
+                      }}
+                    >
+                      {children}
+                    </pre>
+                  )}
+                >
+                  {block.trim()}
+                </SyntaxHighlighter>
+              </div>
+            ) : (
+              <div
+                key={idx}
+                className="break-words whitespace-pre-wrap"
+                style={{
+                  wordBreak: 'break-word',
+                  overflowWrap: 'break-word',
+                  maxWidth: '100%',
+                  hyphens: 'auto',
+                }}
               >
                 {block.trim()}
-              </SyntaxHighlighter>
-            ) : (
-              <Typography key={idx} sx={{ fontSize: 20 }}>
-                {block.trim()}
-              </Typography>
+              </div>
             )
-          )}
-      </Box>
-    </Box>
+          )
+        )}
+      </div>
+    </div>
   );
-};
-
-/* --------------------------------------------------------------
-   Optional runtime type checking
-----------------------------------------------------------------*/
-import PropTypes from 'prop-types';
-
-ChatItem.propTypes = {
-  content: PropTypes.string.isRequired,
-  role: PropTypes.oneOf(['user', 'assistant']).isRequired,
 };
 
 export default ChatItem;

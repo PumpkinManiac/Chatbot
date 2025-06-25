@@ -17,6 +17,15 @@ export const signupUser = async (name, email, password) => {
   return res.data;
 };
 
+export const verifyEmailUser = async (token) => {
+  // GET /user/verify-email?token=...
+   const res = await axios.get(`http://localhost:3000/api/v1/user/verify-email?token=${token}`, { withCredentials: true });
+  if (res.status !== 200) {
+    throw new Error(res.data?.message || "Email verification failed");
+  }
+  return res.data;
+};
+
 export const checkAuthStatus = async () => {
   const res = await axios.get('/user/auth-status');
   if (res.status !== 200) {

@@ -1,43 +1,100 @@
+
+import { GoogleGenAI } from "@google/genai";
 import User from "../models/user.js";
-import { configureGemini } from "../config/gemini-config.js";
 
-export const generateChatCompletion = async (req, res, next) => {
+const ai = new GoogleGenAI({ apiKey: "AIzaSyCU3whc5Ek_YlUc6Z1QifOMnci623p8Du4" });
+
+export const generateChatCompletion = async (req, res) => {   
+  const { message } = req.body;
+try {
+  const user = await User.findById(res.locals.jwtData.id);
+  console.log("User ID:", res.locals.jwtData.id);
+  if (!user)
+      return res.status(401).json({ message: "User not registered OR Token malfunctioned" });
+
+  //grab chats of the user to understand the context of conversation
+  // Step 1: Convert user's chat history into Gemini format
+  const history = user.chats.map(({ role, content }) => ({
+      role,
+      parts: [{ text: content }],
+    }));
+
+      // Step 2: Add the new user message to both history and DB array
+    const newMessage = { role: "user", content: message };
+    history.push({ role: "user", parts: [{ text: message }] });
+    user.chats.push(newMessage);
+
+    // Step 3: Create Gemini chat session with history
+    const chat = ai.chats.create({
+      model: "gemini-2.5-flash",
+      history,
+    });
+    
+        // Step 4: Send the message to Gemini
+    const result = await chat.sendMessage({ message });
+
+        // Step 5: Add model's response to user's chat history
+    const reply = {
+      role: "model",
+      content: result.text,
+    };
+
+    user.chats.push(reply);
+    await user.save();
+
+
+       // Step 6: Send back updated chats
+    return res.status(200).json({ chats: user.chats });
+
+} catch (error) {
+  console.error("Gemini Chat Error:", error);
+    return res.status(500).json({ error: "Failed to get response from Gemini." });
+}
+
+};
+
+export const sendChatsToUser = async (req, res) => {
     try {
-        const { message } = req.body;
-
-        // 1. Find the user from the database
-        const user = await User.findById(res.locals.jwtData.id);
-        if (!user) {
-            return res.status(401).json({ message: "User not registered or Token malfunctioned" });
+        //user token check
+        const user = await User.findById(res.locals.jwtData.id); 
+        if(!user) {
+            return res.status(401).send("User not registered or Token malfunctioned");
         }
 
-        // 2. Format the user's chat history for the Gemini API
-        const history = user.chats.map((chat) => ({
-            role: chat.role,            // Takes 'role' from your schema
-            parts: [{ text: chat.content }], // Takes 'content' from your schema
-        }));
+        if(user._id.toString() !== res.locals.jwtData.id) {
+            return res.status(401).send("Permission denied");
+        }
 
-        // 3. Initialize the Gemini Model and start a chat with the history
-        const genAI = configureGemini();
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-        const chat = model.startChat({ history });
-
-        // 4. Send the new message and get the response
-        const result = await chat.sendMessage(message);
-        const response = await result.response;
-        const responseText = response.text();
-
-        // 5. Save the new messages to the database, following your schema
-        user.chats.push({ role: "user", content: message });
-        user.chats.push({ role: "model", content: responseText });
-
-        await user.save();
-
-        // 6. Send the response back to the client
-        return res.status(200).json({ reply: responseText });
-
-    } catch (error) {
-        console.error("Error in generateChatCompletion:", error);
-        return res.status(500).json({ message: "Something went wrong", error: error.message });
+        return res.status(200).json({
+            success: true,
+            message: "User logged in successfully",
+            chats: user.chats
+        });
+    } catch (error) { 
+        console.log(error);
+        return res.status(200).jaon({message: "Error", cause: error.message})
     }
-};
+}
+
+export const deleteChats = async (req, res) => {
+    try {
+        //user token check
+        const user = await User.findById(res.locals.jwtData.id); 
+        if(!user) {
+            return res.status(401).send("User not registered or Token malfunctioned");
+        }
+
+        if(user._id.toString() !== res.locals.jwtData.id) {
+            return res.status(401).send("Permission denied");
+        }
+        user.chats = []; // Clear the chats array
+        await user.save(); // Save the changes to the database
+        return res.status(200).json({
+            success: true,
+            message: "User logged in successfully",
+        });
+    } catch (error) { 
+        console.log(error);
+        return res.status(200).jaon({message: "Error", cause: error.message})
+    }
+}

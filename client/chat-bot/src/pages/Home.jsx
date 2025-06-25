@@ -1,71 +1,63 @@
-import React from "react";
-import { Box, useMediaQuery, useTheme } from "@mui/material";
-import TypingAnim from "../component/typer/TypingAnim.jsx"
-import Footer from "../component/footer/Footer.jsx";
+import TypingAnim from "../component/typer/TypingAnim.jsx";
+import NavigationLink from "../component/shared/NavigationLink.jsx";
+import { useAuth } from "../context/Authcontext.jsx";
+import Lottie from "lottie-react";
+import robotAnimation from "../assets/Animation - 1750501753313.json";
+import girlAnimation from "../assets/Animation - Girl.json";
 
 const Home = () => {
-  const theme = useTheme();
-  const isBelowMd = useMediaQuery(theme.breakpoints.down("md"));
+  const auth = useAuth();
 
   return (
-    <Box width="100%" height="100%" overflow="hidden">
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          width: "100%",
-          mt: 3,
-        }}
-      >
-        {/* Typing animation headline */}
+    <div className="w-full min-h-screen bg-[#b4c5e4] text-white flex flex-col">
+      {/* Typing animation headline */}
+      <div className="mt-6 flex justify-center px-4">
         <TypingAnim />
+      </div>
 
-        {/* Logo images section */}
-        <Box
-          sx={{
-            width: "100%",
-            display: "flex",
-            flexDirection: { md: "row", xs: "column" },
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 5,
-            my: 10,
-          }}
-        >
-          <img
-            src="robot.png"
-            alt="robot"
-            style={{ width: 200, margin: "auto" }}
+      {/* Main content */}
+      <div className="flex flex-col md:flex-row items-center justify-center gap-12 px-6 md:px-20 py-12 flex-grow">
+        
+        {/* Left Animated Robot */}
+        <div className="flex-1 flex justify-center items-center">
+          <Lottie
+            animationData={robotAnimation}
+            loop
+            autoplay
+            className="w-72 sm:w-80 md:w-[24rem] drop-shadow-2xl"
           />
-          <img
-            src="openai.png"
-            alt="openai"
-            className="image-inverted rotate"
-            style={{ width: 200, margin: "auto" }}
-          />
-        </Box>
+        </div>
 
-        {/* Chat preview image */}
-        <Box display="flex" justifyContent="center" width="100%">
-          <img
-            src="chat.png"
-            alt="chatbot"
-            style={{
-              width: isBelowMd ? "80%" : "60%",
-              borderRadius: 20,
-              boxShadow: "-5px -5px 105px #64f3d5",
-              marginTop: 20,
-              marginBottom: 20,
-              padding: 10,
-            }}
-          />
-        </Box>
-      </Box>
+        {/* Right Side with Girl Animation above text */}
+        <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left space-y-6">
+          {/* Girl Animation above text */}
+          <div className="w-40 sm:w-48 md:w-56 mx-auto md:mx-0">
+            <Lottie
+              animationData={girlAnimation}
+              loop
+              autoplay
+              className="drop-shadow-xl"
+            />
+          </div>
 
-      {/* Footer */}
-      <Footer />
-    </Box>
+          {/* Description */}
+          <p className="text-lg md:text-xl font-medium text-white leading-relaxed">
+            Interact with our <span className="font-semibold text-[#1a1a1a]">Gemini Bot</span> to get instant answers. <br />
+            Sign up to save conversations and tailor the chatbot to your personal experience.
+          </p>
+
+          {/* Get Started Button */}
+          <div>
+            <NavigationLink
+              bg="#00fffc"
+              to="/signup"
+              text="Get Started"
+              textColor="black"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

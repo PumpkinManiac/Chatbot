@@ -1,74 +1,38 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Box, Avatar, Typography, Button, IconButton } from '@mui/material';
-import { red } from '@mui/material/colors';
 import { IoMdSend } from 'react-icons/io';
-import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/Authcontext.jsx';
-import ChatItem from '../component/chat/ChatItem.jsx'
+import ChatItem from '../component/chat/ChatItem.jsx';
 import {
   deleteUserChats,
   getUserChats,
   sendChatRequest,
 } from '../helpers/api-communicator';
 
- const chatMessages = [
-  {
-    "role": "user",
-    "message": "Hi there, I'm looking for some information about artificial intelligence."
-  },
-  {
-    "role": "assistant",
-    "message": "Hello! I can definitely help with that. What specific aspects of AI are you interested in?"
-  },
-  {
-    "role": "user",
-    "message": "Could you give me a brief overview of what AI is and its main applications?"
-  },
-  {
-    "role": "assistant",
-    "message": "AI, or Artificial Intelligence, refers to the simulation of human intelligence processes by machines, especially computer systems. Its main applications include natural language processing (like chatbots), machine learning (for predictions and recommendations), computer vision (for image recognition), and robotics."
-  },
-  {
-    "role": "user",
-    "message": "That's a great start! Are there any ethical concerns related to AI development?"
-  },
-  {
-    "role": "assistant",
-    "message": "Yes, absolutely. Key ethical concerns include data privacy, algorithmic bias, job displacement, and the potential for misuse. Responsible AI development focuses on addressing these issues to ensure fair and beneficial use of the technology."
-  }
-]
-
-
 const Chat = () => {
   const navigate = useNavigate();
   const inputRef = useRef(null);
+  const endOfMessagesRef = useRef(null);
   const auth = useAuth();
+  const [chatMessages, setChatMessages] = useState([]);
 
-  // ------------- Local state for messages -------------------------
-  const [chatMessages, setChatMessages] = useState([]); // [{ role, content }]
-
-  // ------------- Send a new message -------------------------------
+  // Send message
   const handleSubmit = async () => {
     const content = inputRef.current?.value || '';
     if (!content.trim()) return;
-
-    // clear input
-    if (inputRef.current) inputRef.current.value = '';
-
-    // add user message optimistically
-    setChatMessages((prev) => [...prev, { role: 'user', content }]);
-
+    inputRef.current.value = '';
+    setChatMessages(prev => [...prev, { role: 'user', content }]);
     try {
-      const chatData = await sendChatRequest(content); // returns { chats: [...] }
-      setChatMessages(chatData.chats);
+      const { chats } = await sendChatRequest(content);
+      setChatMessages(chats);
     } catch (err) {
       toast.error('Failed to send message');
       console.error(err);
     }
   };
 
-  // ------------- Clear conversation -------------------------------
+  // Delete chats
   const handleDeleteChats = async () => {
     try {
       toast.loading('Deleting chats…', { id: 'deletechats' });
@@ -81,177 +45,74 @@ const Chat = () => {
     }
   };
 
-  // ------------- Load existing chats on mount ---------------------
+  // Load chats
   useLayoutEffect(() => {
     if (auth?.isLoggedIn && auth.user) {
       toast.loading('Loading chats…', { id: 'loadchats' });
       getUserChats()
-        .then((data) => {
-          setChatMessages(data.chats);
+        .then(({ chats }) => {
+          setChatMessages(chats);
           toast.success('Chats loaded', { id: 'loadchats' });
         })
-        .catch((err) => {
+        .catch(err => {
           toast.error('Loading failed', { id: 'loadchats' });
           console.error(err);
         });
     }
   }, [auth]);
 
-  // ------------- Redirect to login if not authenticated -----------
+  // Redirect if not auth
   useEffect(() => {
     if (!auth?.user) navigate('/login');
   }, [auth, navigate]);
 
-  // ------------- Render -------------------------------------------
+  // Auto-scroll
+  useEffect(() => {
+    endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flex: 1,
-        width: '100%',
-        height: '100%',
-        mt: 3,
-        gap: 3,
-      }}
-    >
-      {/* ---------- LEFT SIDEBAR (DESKTOP) ---------- */}
-      <Box
-        sx={{
-          display: { md: 'flex', xs: 'none', sm: 'none' },
-          flex: 0.2,
-          flexDirection: 'column',
-        }}
-      >
-        <Box
-          sx={{
-            display: 'flex',
-            width: '100%',
-            height: '60vh',
-            bgcolor: 'rgb(17,29,39)',
-            borderRadius: 5,
-            flexDirection: 'column',
-            mx: 3,
-          }}
+    <div className="flex h-screen bg-[#b4c5e4] text-white flex-col p-4">
+   
+    {/* Top bar */}
+      <div className="flex justify-between items-center mb-2" >
+        <h1 className="text-xl sm:text-2xl font-semibold">Gemini – Flask‑2.5</h1>
+        <button
+          onClick={handleDeleteChats}
+          className="bg-white hover:bg-gray-100 transition text-black font-bold py-1 px-4 rounded"
         >
-          <Avatar
-            sx={{
-              mx: 'auto',
-              my: 2,
-              bgcolor: 'white',
-              color: 'black',
-              fontWeight: 700,
-            }}
-          >
-            {auth?.user?.name?.[0]}
-            {auth?.user?.name?.split(' ')[1]?.[0]}
-          </Avatar>
+          Clear Conversation
+        </button>
+      </div>
+      {/* Main chat area */}
+        <div className="flex-1 bg-[#51538f] bg-opacity-80 rounded-xl p-4 overflow-y-auto overflow-x-hidden">
+         {chatMessages.length===0 ?(<div className="flex items-center justify-center h-full text-gray-400 text-center text-lg italic"> No messages yet. Start the conversation! </div>) : (
+          chatMessages.map((chat, idx) => (
+            <ChatItem key={idx} content={chat.content} role={chat.role} />
+          ))
+         )}
+          <div ref={endOfMessagesRef} />
+          
+        </div>
 
-          <Typography sx={{ mx: 'auto', fontFamily: 'work sans' }}>
-            You are talking to a ChatBOT
-          </Typography>
-
-          <Typography
-            sx={{ mx: 'auto', fontFamily: 'work sans', my: 4, p: 3 }}
-          >
-            You can ask questions about knowledge, business, advice, education,
-            etc. But avoid sharing personal information.
-          </Typography>
-
-          <Button
-            onClick={handleDeleteChats}
-            sx={{
-              width: '200px',
-              my: 'auto',
-              color: 'white',
-              fontWeight: 700,
-              borderRadius: 3,
-              mx: 'auto',
-              bgcolor: red[300],
-              ':hover': { bgcolor: red.A400 },
-            }}
-          >
-            Clear Conversation
-          </Button>
-        </Box>
-      </Box>
-
-      {/* ---------- MAIN CHAT AREA ---------- */}
-      <Box
-        sx={{
-          display: 'flex',
-          flex: { md: 0.8, xs: 1, sm: 1 },
-          flexDirection: 'column',
-          px: 3,
-        }}
-      >
-        <Typography
-          sx={{
-            fontSize: '40px',
-            color: 'white',
-            mb: 2,
-            mx: 'auto',
-            fontWeight: 600,
-          }}
-        >
-          Gemini – Flask‑2.5 
-        </Typography>
-
-        {/* Message list */}
-        <Box
-          sx={{
-            width: '100%',
-            height: '60vh',
-            borderRadius: 3,
-            mx: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            overflowX: 'hidden',
-            overflowY: 'auto',
-            scrollBehavior: 'smooth',
-          }}
-        >
-          {chatMessages.map((chat,index) => (
-            <ChatItem
-              key={index}
-              content={chat.content}
-              role={chat.role}
-            />
-          ))}
-        </Box>
-
-        {/* Input box */}
-        <div
-          style={{
-            width: '100%',
-            borderRadius: 8,
-            backgroundColor: 'rgb(17,27,39)',
-            display: 'flex',
-            margin: 'auto',
-          }}
-        >
+        {/* Input */}
+        <div className="mt-4 bg-[#51538f] bg-opacity-90 rounded-xl flex items-center p-2">
           <input
             ref={inputRef}
             type="text"
             placeholder="Type your message…"
-            style={{
-              flex: 1,
-              backgroundColor: 'transparent',
-              padding: '30px',
-              border: 'none',
-              outline: 'none',
-              color: 'white',
-              fontSize: '20px',
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSubmit();
-            }}
+            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+            className="flex-1 bg-transparent outline-none border-none text-white placeholder-gray-400 px-4 py-2 text-base"
           />
-          <IconButton onClick={handleSubmit} sx={{ color: 'white', mx: 1 }}>
-            <IoMdSend />
-          </IconButton>
+          <button
+            onClick={handleSubmit}
+            className="text-white mx-2 focus:outline-none"
+            aria-label="send"
+          >
+            <IoMdSend size={24} />
+          </button>
         </div>
-      </Box>
-    </Box>
+      </div>
   );
 };
 

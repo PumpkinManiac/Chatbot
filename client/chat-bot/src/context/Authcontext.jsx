@@ -9,6 +9,7 @@ import {
   loginUser,
   logoutUser,
   signupUser,
+  verifyEmailUser
 } from '../helpers/api-communicator.js';
 import PropTypes from 'prop-types';
 
@@ -17,6 +18,7 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);      // { name, email } | null
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   /* Check cookies / session once on mount */
   useEffect(() => {
@@ -50,6 +52,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const verifyEmail = async (token) => {
+    // Called after user clicks email link
+    const data = await verifyEmailUser(token);
+    if (data) {
+      setUser({ name: data.name, email: data.email });
+      setIsLoggedIn(true);
+      setEmailSent(false);
+    }
+  };
+
   const logout = async () => {
     await logoutUser();
     setUser(null);
@@ -60,9 +72,11 @@ export const AuthProvider = ({ children }) => {
   /* -------- Memoised context value ------------------------------- */
   const value = {
     user,          // null or { name, email }
-    isLoggedIn,    // boolean
+    isLoggedIn, 
+    emailSent,    // boolean
     login,         // (email, password) => Promise<void>
-    signup,        // (name, email, password) => Promise<void>
+    signup, 
+    verifyEmail,       // (name, email, password) => Promise<void>
     logout,        // () => Promise<void>
   };
 

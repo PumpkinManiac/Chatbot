@@ -5,20 +5,18 @@ const TypingAnim = () => {
   return (
     <TypeAnimation
       sequence={[
-        "Chat With Your OWN AI",
-        1000,
-        "Built With OpenAI 🤖",
-        2000,
-        "Your Own Customized ChatGPT 💻",
+        "Welcome to the AI World",
+        1500,
+        "Powered by GEMINI 2.0",
+        1500,
+        "Custom Chat Experience ✨",
+        1500,
+        "Secure. Smart. Yours 🔒",
         1500,
       ]}
-      speed={50}
-      style={{
-        fontSize: "60px",
-        color: "white",
-        display: "inline-block",
-        textShadow: "1px 1px 20px #000",
-      }}
+      speed={60}
+      wrapper="span"
+      className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white text-center drop-shadow-xl"
       repeat={Infinity}
     />
   );
