@@ -9,7 +9,7 @@ import { Toaster } from "react-hot-toast";
 import axios from "axios";
 
 // Axios Configuration
-axios.defaults.baseURL = "http://chatbot-ten-lake-76.vercel.app";
+axios.defaults.baseURL = "http://chatbot-ten-lake-76.vercel.app/api/v1";
 axios.defaults.withCredentials = true; //exchange the cookies
 
 // MUI Theme Configuration
