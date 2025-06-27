@@ -8,6 +8,7 @@ import cors from 'cors';
 
 const app = express();
 app.use(cors({origin:"http://final-chatbot-nine.vercel.app", credentials: true}))
+app.use(cors({origin:"", credentials: true}))
 app.use(express.json());
 app.use(cookieParser(process.env.COOKIE_SECRET));
 
